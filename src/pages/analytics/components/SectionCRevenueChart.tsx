@@ -111,10 +111,21 @@ export function SectionCRevenueChart({ data, isLoading }: SectionCRevenueChartPr
               <Line
                 type="monotone"
                 dataKey="extraExpenses"
-                name="Доп. расходы"
+                name="Доп. расходы (KGS)"
                 stroke={palette.extraExpensesLine}
                 strokeWidth={2}
                 strokeDasharray="6 3"
+                dot={false}
+                isAnimationActive
+                animationDuration={1100}
+              />
+              <Line
+                type="monotone"
+                dataKey="extraIncomes"
+                name="Доп. пополнения (KGS)"
+                stroke={palette.extraIncomesLine}
+                strokeWidth={2}
+                strokeDasharray="4 4"
                 dot={false}
                 isAnimationActive
                 animationDuration={1100}

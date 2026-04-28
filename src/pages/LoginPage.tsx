@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ThemeToggle from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -33,7 +36,7 @@ export default function LoginPage() {
         if (!cancelled) navigate('/');
       } catch (err: unknown) {
         if (!cancelled) {
-          let msg = 'Telegram login failed';
+          let msg = t('login.errors.telegramFailed');
           if (axios.isAxiosError(err) && err.response?.data) {
             const d = err.response.data as {
               message?: string | string[];
@@ -63,9 +66,9 @@ export default function LoginPage() {
       navigate('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Login failed');
+        setError(err.message || t('login.errors.loginFailed'));
       } else {
-        setError('Login failed');
+        setError(t('login.errors.loginFailed'));
       }
     } finally {
       setLoading(false);
@@ -74,7 +77,8 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen min-h-[100dvh] flex-col items-center justify-center px-4 py-10">
-      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-2 sm:right-6 sm:top-6">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
       <Card className="w-full max-w-sm border-primary/20 shadow-xl shadow-primary/15">
@@ -83,34 +87,34 @@ export default function LoginPage() {
             <span className="font-heading text-lg font-bold">WB</span>
           </div>
           <CardTitle className="font-heading text-2xl font-bold tracking-tight">
-            WB Analytics
+            {t('login.brandTitle')}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">Вход в кабинет продавца</p>
+          <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
         </CardHeader>
         <CardContent>
           {telegramLoading && (
             <p className="mb-4 text-center text-sm text-muted-foreground">
-              Вход через Telegram…
+              {t('login.telegramBanner')}
             </p>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t('login.username')}</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter username"
+                placeholder={t('login.placeholderUser')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('login.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter password"
+                placeholder={t('login.placeholderPass')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -124,7 +128,7 @@ export default function LoginPage() {
               className="w-full"
               disabled={loading || telegramLoading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('login.signingIn') : t('login.submit')}
             </Button>
           </form>
         </CardContent>

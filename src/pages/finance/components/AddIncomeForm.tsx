@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
@@ -24,13 +24,25 @@ interface AddIncomeFormProps {
   onSuccess: () => void;
 }
 
+function previewKgs(usd: string, rate: string): number | null {
+  const u = parseFloat(usd);
+  const r = parseFloat(rate);
+  if (!Number.isFinite(u) || !Number.isFinite(r) || u <= 0 || r <= 0) return null;
+  return Math.round(u * r * 100) / 100;
+}
+
 export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
   const [clientId, setClientId] = useState<string>('');
   const [incomeDate, setIncomeDate] = useState(todayStr());
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('KGS');
+  const [amountUsd, setAmountUsd] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const kgsPreview = useMemo(
+    () => previewKgs(amountUsd, exchangeRate),
+    [amountUsd, exchangeRate],
+  );
 
   const mutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
@@ -41,8 +53,8 @@ export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
       setMessage({ type: 'success', text: 'Пополнение успешно сохранено' });
       setClientId('');
       setIncomeDate(todayStr());
-      setAmount('');
-      setCurrency('USD');
+      setAmountUsd('');
+      setExchangeRate('');
       setNote('');
       setTimeout(() => setMessage(null), 3000);
       onSuccess();
@@ -58,15 +70,22 @@ export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientId || !amount) return;
+    const amt = parseFloat(amountUsd);
+    const rate = parseFloat(exchangeRate);
+    if (!clientId || !Number.isFinite(amt) || !Number.isFinite(rate)) return;
+    if (amt <= 0 || rate <= 0) return;
     mutation.mutate({
       client_id: clientId,
       income_date: incomeDate,
-      amount: parseFloat(amount),
-      currency: currency || undefined,
+      amount: amt,
+      exchange_rate_kgs_per_usd: rate,
+      currency: 'USD',
       note: note || undefined,
     });
   };
+
+  const canSubmit =
+    !!clientId && parseFloat(amountUsd) > 0 && parseFloat(exchangeRate) > 0;
 
   return (
     <Card className="mt-4 max-w-lg">
@@ -105,21 +124,37 @@ export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Сумма</Label>
+            <Label>Сумма (USD)</Label>
             <Input
               type="number"
               step="0.01"
               min="0"
               placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              value={amountUsd}
+              onChange={(e) => setAmountUsd(e.target.value)}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Валюта</Label>
-            <Input value={currency} onChange={(e) => setCurrency(e.target.value)} />
+            <Label>Курс (KGS за 1 USD)</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              min="0"
+              placeholder="87.5"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
           </div>
+
+          {kgsPreview != null && (
+            <p className="text-sm text-muted-foreground">
+              Эквивалент:{' '}
+              <span className="font-medium tabular-nums text-foreground">
+                {kgsPreview.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KGS
+              </span>
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label>Примечание</Label>
@@ -140,7 +175,7 @@ export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
             </p>
           )}
 
-          <Button type="submit" disabled={mutation.isPending || !clientId || !amount}>
+          <Button type="submit" disabled={mutation.isPending || !canSubmit}>
             <Plus className="size-4" />
             {mutation.isPending ? 'Сохранение...' : 'Сохранить доход'}
           </Button>

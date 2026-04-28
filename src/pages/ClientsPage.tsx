@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -53,6 +54,7 @@ const emptyForm: ClientFormData = {
 };
 
 export default function ClientsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -200,7 +202,7 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("clients.pageTitle")}</h1>
         {isAdmin && (
           <Button onClick={openCreateDialog}>
             <Plus className="size-4" />

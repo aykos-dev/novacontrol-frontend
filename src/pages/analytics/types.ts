@@ -7,11 +7,17 @@ export interface DailyEntry {
   date: string;
   income: number;
   expenses: number;
+  balance_change: number;
 }
 
 export interface WbReport {
   daily: DailyEntry[];
-  totals: { income: number; expenses: number; retail_sales: number };
+  totals: {
+    income: number;
+    expenses: number;
+    retail_sales: number;
+    balance_change: number;
+  };
   breakdown: {
     retail_sales: number;
     ppvz_reward: number;
@@ -35,6 +41,12 @@ export interface ExpensesSummary {
     currency: string;
   }[];
   grandTotal: number;
+  grandTotalKgs?: number;
+}
+
+export interface IncomesSummary {
+  grandTotal: number;
+  grandTotalKgs?: number;
 }
 
 export interface DailyExpenseRow {
@@ -63,4 +75,5 @@ export interface RevenueChartEntry {
   wbRevenue: number;
   realRevenue: number;
   extraExpenses: number;
+  extraIncomes: number;
 }

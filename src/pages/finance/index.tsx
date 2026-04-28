@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/lib/api';
@@ -11,6 +12,7 @@ import { AddIncomeForm } from './components/AddIncomeForm';
 import { HistorySection } from './components/HistorySection';
 
 export default function FinancePage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'ADMIN';
@@ -35,13 +37,13 @@ export default function FinancePage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Расходы и пополнении</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t('finance.pageTitle')}</h1>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
         <TabsList className="flex flex-wrap">
-          <TabsTrigger value="expense">Расходы</TabsTrigger>
-          <TabsTrigger value="income">Пополнении</TabsTrigger>
-          <TabsTrigger value="history">История</TabsTrigger>
+          <TabsTrigger value="expense">{t('finance.tabExpense')}</TabsTrigger>
+          <TabsTrigger value="income">{t('finance.tabIncome')}</TabsTrigger>
+          <TabsTrigger value="history">{t('finance.tabHistory')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="expense">
@@ -51,6 +53,8 @@ export default function FinancePage() {
             onSuccess={() => {
               setActiveTab('history');
               queryClient.invalidateQueries({ queryKey: ['expenses'] });
+              queryClient.invalidateQueries({ queryKey: ['expenses-summary'] });
+              queryClient.invalidateQueries({ queryKey: ['incomes-summary'] });
             }}
           />
         </TabsContent>
@@ -61,6 +65,8 @@ export default function FinancePage() {
             onSuccess={() => {
               setActiveTab('history');
               queryClient.invalidateQueries({ queryKey: ['incomes'] });
+              queryClient.invalidateQueries({ queryKey: ['expenses-summary'] });
+              queryClient.invalidateQueries({ queryKey: ['incomes-summary'] });
             }}
           />
         </TabsContent>

@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "dashboard": "Дашборд",
+    "clients": "Клиенты",
+    "finance": "Расходы и доходы",
+    "analytics": "Аналитика",
+    "expenseCategories": "Категории расходов",
+    "users": "Пользователи",
+    "settings": "Настройки"
+  },
+  "app": {
+    "brand": "Analytics",
+    "tagline": "Кабинет продавца",
+    "mobileTitle": "WB Analytics",
+    "logout": "Выход",
+    "openMenu": "Открыть меню",
+    "navigation": "Навигация",
+    "navDescription": "Главное меню",
+    "language": "Язык"
+  },
+  "dashboard": {
+    "title": "Дашборд",
+    "subtitle": "Обзор приходов, расходов и выручки по клиентам.",
+    "selectPlaceholder": "Клиент",
+    "allClients": "Все клиенты",
+    "cards": {
+      "wbIncome": "Приход WB",
+      "wbExpenses": "Расходы WB",
+      "revenueRetailMinusFees": "Выручка (розница − сборы)",
+      "wbBalanceChange": "Изменение баланса WB",
+      "extraExpensesKgs": "Доп. расходы (KGS)",
+      "extraIncomesKgs": "Доп. пополнения (KGS)",
+      "realRevenue": "Чистая выручка"
+    },
+    "wbBreakdownTitle": "Разбивка расходов WB",
+    "extraByCategoryTitle": "Доп. расходы по категориям",
+    "breakdown": {
+      "ppvz_reward": "Комиссия PPVZ",
+      "delivery_rub": "Логистика",
+      "storage_fee": "Хранение",
+      "penalty": "Штрафы",
+      "deduction": "Удержания",
+      "acceptance": "Приёмка",
+      "rebill_logistic_cost": "Повторная логистика"
+    }
+  },
+  "finance": {
+    "pageTitle": "Расходы и пополнения",
+    "tabExpense": "Расходы",
+    "tabIncome": "Пополнения",
+    "tabHistory": "История"
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "subtitle": "Графики доходов, расходов и прибыльности.",
+    "selectPlaceholder": "Выберите клиента"
+  },
+  "login": {
+    "brandTitle": "WB Analytics",
+    "title": "Вход",
+    "subtitle": "Вход в кабинет продавца",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "placeholderUser": "Имя пользователя",
+    "placeholderPass": "Пароль",
+    "submit": "Войти",
+    "signingIn": "Вход…",
+    "telegramBanner": "Вход через Telegram…",
+    "errors": {
+      "telegramFailed": "Не удалось войти через Telegram",
+      "loginFailed": "Ошибка входа"
+    }
+  },
+  "clients": {
+    "pageTitle": "Клиенты"
+  },
+  "clientDetail": {
+    "chartTitle": "Доходы и расходы WB",
+    "chartIncome": "Приход",
+    "chartExpense": "Расход",
+    "chartBalanceChange": "Изменение баланса",
+    "emptyChart": "Нет данных WB за выбранный период",
+    "emptyChartHint": "Выполните синхронизацию или расширьте диапазон дат."
+  },
+  "users": {
+    "pageTitle": "Пользователи"
+  },
+  "expenseCategories": {
+    "pageTitle": "Категории расходов"
+  },
+  "settings": {
+    "adminOnly": "Раздел доступен только администраторам.",
+    "title": "Настройки",
+    "subtitle": "Планировщик и служебные задачи"
+  },
+  "language": {
+    "ru": "Русский",
+    "en": "English"
+  }
+}

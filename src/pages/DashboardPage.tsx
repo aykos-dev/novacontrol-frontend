@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format, subWeeks } from 'date-fns';
 import {
@@ -36,10 +37,16 @@ interface WbReportTotals {
   income: number;
   expenses: number;
   retail_sales: number;
+  balance_change: number;
 }
 
 interface WbReport {
-  daily: { date: string; income: number; expenses: number }[];
+  daily: {
+    date: string;
+    income: number;
+    expenses: number;
+    balance_change: number;
+  }[];
   totals: WbReportTotals;
   breakdown: {
     retail_sales: number;
@@ -64,7 +71,16 @@ interface ExpensesSummary {
     currency: string;
   }[];
   grandTotal: number;
+  grandTotalKgs?: number;
 }
+
+interface IncomesSummary {
+  grandTotal: number;
+  grandTotalKgs?: number;
+}
+
+/** WB + extra mixes use KGS equivalents */
+const MIXED_KGS = 'KGS';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,18 +112,14 @@ function defaultDateRange() {
 
 const ALL_CLIENTS = '__all__';
 
-// ---------------------------------------------------------------------------
-// Breakdown labels
-// ---------------------------------------------------------------------------
-
-const breakdownItems: { label: string; key: keyof WbReport['breakdown'] }[] = [
-  { label: 'PPVZ Reward', key: 'ppvz_reward' },
-  { label: 'Delivery', key: 'delivery_rub' },
-  { label: 'Storage Fee', key: 'storage_fee' },
-  { label: 'Penalty', key: 'penalty' },
-  { label: 'Deduction', key: 'deduction' },
-  { label: 'Acceptance', key: 'acceptance' },
-  { label: 'Rebill Logistics', key: 'rebill_logistic_cost' },
+const BREAKDOWN_KEYS: (keyof WbReport['breakdown'])[] = [
+  'ppvz_reward',
+  'delivery_rub',
+  'storage_fee',
+  'penalty',
+  'deduction',
+  'acceptance',
+  'rebill_logistic_cost',
 ];
 
 // ---------------------------------------------------------------------------
@@ -115,6 +127,7 @@ const breakdownItems: { label: string; key: keyof WbReport['breakdown'] }[] = [
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState(defaultDateRange);
   const [selectedClientId, setSelectedClientId] = useState<string>(ALL_CLIENTS);
 
@@ -133,11 +146,6 @@ export default function DashboardPage() {
     [clientsQuery.data],
   );
 
-  const selectedClient = useMemo(
-    () => activeClients.find((c) => c.id === selectedClientId) ?? null,
-    [activeClients, selectedClientId],
-  );
-
   const clientIdsToFetch = useMemo(
     () =>
       selectedClientId === ALL_CLIENTS
@@ -149,10 +157,10 @@ export default function DashboardPage() {
   // Base UI Select: `items` maps values to trigger labels (otherwise UUIDs show).
   const clientSelectItems = useMemo(
     () => [
-      { value: ALL_CLIENTS, label: 'All Clients' },
+      { value: ALL_CLIENTS, label: t('dashboard.allClients') },
       ...activeClients.map((c) => ({ value: c.id, label: c.name })),
     ],
-    [activeClients],
+    [activeClients, t],
   );
 
   // Fetch WB reports — one per client, then aggregate if "All Clients"
@@ -174,7 +182,7 @@ export default function DashboardPage() {
 
       const combined: WbReport = {
         daily: [],
-        totals: { income: 0, expenses: 0, retail_sales: 0 },
+        totals: { income: 0, expenses: 0, retail_sales: 0, balance_change: 0 },
         breakdown: {
           retail_sales: 0,
           ppvz_reward: 0,
@@ -191,6 +199,7 @@ export default function DashboardPage() {
         combined.totals.income += r.totals.income;
         combined.totals.expenses += r.totals.expenses;
         combined.totals.retail_sales += r.totals.retail_sales ?? 0;
+        combined.totals.balance_change += r.totals.balance_change ?? 0;
         for (const key of Object.keys(combined.breakdown) as (keyof WbReport['breakdown'])[]) {
           combined.breakdown[key] += r.breakdown[key] ?? 0;
         }
@@ -226,64 +235,108 @@ export default function DashboardPage() {
     enabled: clientIdsToFetch.length > 0,
   });
 
+  const incomesQuery = useQuery<IncomesSummary | null>({
+    queryKey: ['incomes-summary', clientIdsToFetch, dateRange],
+    queryFn: async () => {
+      if (clientIdsToFetch.length === 0) return null;
+
+      const summaries = await Promise.all(
+        clientIdsToFetch.map(async (id) => {
+          const { data } = await api.get<IncomesSummary>(
+            `/incomes/summary?clientId=${id}&dateFrom=${dateRange.from}&dateTo=${dateRange.to}`,
+          );
+          return data;
+        }),
+      );
+
+      if (summaries.length === 1) return summaries[0];
+
+      return {
+        grandTotal: summaries.reduce((sum, s) => sum + s.grandTotal, 0),
+      };
+    },
+    enabled: clientIdsToFetch.length > 0,
+  });
+
   // ---- Derived values ----
 
-  const currency = selectedClient?.currency ?? 'RUB';
   const wbIncome = wbReportQuery.data?.totals.income ?? 0;
   const wbExpenses = wbReportQuery.data?.totals.expenses ?? 0;
+  const wbBalanceChange = wbReportQuery.data?.totals.balance_change ?? 0;
   const extraExpenses = expensesQuery.data?.grandTotal ?? 0;
+  const extraIncomes = incomesQuery.data?.grandTotal ?? 0;
   const revenue = wbIncome - wbExpenses;
-  const realRevenue = revenue - extraExpenses;
+  const realRevenue = revenue - extraExpenses + extraIncomes;
 
   const isLoading =
     clientsQuery.isLoading ||
     wbReportQuery.isLoading ||
-    expensesQuery.isLoading;
+    expensesQuery.isLoading ||
+    incomesQuery.isLoading;
 
-  // ---- Summary card definitions ----
+  const breakdownItems = useMemo(
+    () =>
+      BREAKDOWN_KEYS.map((key) => ({
+        label: t(`dashboard.breakdown.${String(key)}`),
+        key,
+      })),
+    [t],
+  );
 
-  const summaryCards = [
-    {
-      label: 'WB Income',
-      value: wbIncome,
-      icon: TrendingUp,
-      borderColor: 'border-l-primary',
-      iconColor: 'text-primary',
-      bgAccent: 'bg-primary/15 dark:bg-primary/25',
-    },
-    {
-      label: 'WB Expenses',
-      value: wbExpenses,
-      icon: TrendingDown,
-      borderColor: 'border-l-[var(--wb-violet)]',
-      iconColor: 'text-[var(--wb-violet)]',
-      bgAccent: 'bg-[var(--wb-violet)]/15 dark:bg-[var(--wb-violet)]/25',
-    },
-    {
-      label: 'Revenue',
-      value: revenue,
-      icon: DollarSign,
-      borderColor: 'border-l-chart-5',
-      iconColor: 'text-chart-5',
-      bgAccent: 'bg-chart-5/15 dark:bg-chart-5/25',
-    },
-    {
-      label: 'Extra Expenses',
-      value: extraExpenses,
-      icon: Receipt,
-      borderColor: 'border-l-chart-4',
-      iconColor: 'text-chart-4',
-      bgAccent: 'bg-chart-4/15 dark:bg-chart-4/25',
-    },
-    {
-      label: 'Real Revenue',
-      value: realRevenue,
-      icon: Calculator,
-      borderColor: 'border-l-chart-3',
-      iconColor: 'text-chart-3',
-      bgAccent: 'bg-chart-3/15 dark:bg-chart-3/25',
-    },
-  ];
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: t('dashboard.cards.wbIncome'),
+        value: wbIncome,
+        icon: TrendingUp,
+        borderColor: 'border-l-primary',
+        iconColor: 'text-primary',
+        bgAccent: 'bg-primary/15 dark:bg-primary/25',
+      },
+      {
+        label: t('dashboard.cards.wbExpenses'),
+        value: wbExpenses,
+        icon: TrendingDown,
+        borderColor: 'border-l-[var(--wb-violet)]',
+        iconColor: 'text-[var(--wb-violet)]',
+        bgAccent: 'bg-[var(--wb-violet)]/15 dark:bg-[var(--wb-violet)]/25',
+      },
+      {
+        label: t('dashboard.cards.revenueRetailMinusFees'),
+        value: revenue,
+        icon: DollarSign,
+        borderColor: 'border-l-chart-5',
+        iconColor: 'text-chart-5',
+        bgAccent: 'bg-chart-5/15 dark:bg-chart-5/25',
+      },
+      {
+        label: t('dashboard.cards.extraExpensesKgs'),
+        value: extraExpenses,
+        icon: Receipt,
+        borderColor: 'border-l-chart-4',
+        iconColor: 'text-chart-4',
+        bgAccent: 'bg-chart-4/15 dark:bg-chart-4/25',
+      },
+      {
+        label: t('dashboard.cards.realRevenue'),
+        value: realRevenue,
+        icon: Calculator,
+        borderColor: 'border-l-chart-3',
+        iconColor: 'text-chart-3',
+        bgAccent: 'bg-chart-3/15 dark:bg-chart-3/25',
+      },
+    ],
+    [
+      t,
+      wbIncome,
+      wbExpenses,
+      revenue,
+      wbBalanceChange,
+      extraExpenses,
+      extraIncomes,
+      realRevenue,
+    ],
+  );
 
   // ---- Render ----
 
@@ -292,11 +345,9 @@ export default function DashboardPage() {
       {/* Page heading */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
-          Dashboard
+          {t('dashboard.title')}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Overview of income, expenses, and revenue across your clients.
-        </p>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* Controls row: date range + client selector */}
@@ -309,10 +360,10 @@ export default function DashboardPage() {
           items={clientSelectItems}
         >
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="Select client" />
+            <SelectValue placeholder={t('dashboard.selectPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_CLIENTS}>All Clients</SelectItem>
+            <SelectItem value={ALL_CLIENTS}>{t('dashboard.allClients')}</SelectItem>
             {activeClients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -323,9 +374,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading
-          ? Array.from({ length: 5 }).map((_, i) => (
+          ? Array.from({ length: 7 }).map((_, i) => (
               <Card key={i} className="border-l-4 border-l-muted">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <Skeleton className="h-4 w-24" />
@@ -355,7 +406,7 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-2xl font-bold tracking-tight">
-                      {formatCurrency(card.value, currency)}
+                      {formatCurrency(card.value, MIXED_KGS)}
                     </p>
                   </CardContent>
                 </Card>
@@ -367,7 +418,7 @@ export default function DashboardPage() {
       {!isLoading && wbReportQuery.data && (
         <Card>
           <CardHeader>
-            <CardTitle>WB Expense Breakdown</CardTitle>
+            <CardTitle>{t('dashboard.wbBreakdownTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -380,10 +431,7 @@ export default function DashboardPage() {
                     {item.label}
                   </span>
                   <span className="font-semibold">
-                    {formatCurrency(
-                      wbReportQuery.data!.breakdown[item.key],
-                      currency,
-                    )}
+                    {formatCurrency(wbReportQuery.data!.breakdown[item.key], MIXED_KGS)}
                   </span>
                 </div>
               ))}
@@ -398,7 +446,7 @@ export default function DashboardPage() {
         expensesQuery.data.byCategory.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Extra Expenses by Category</CardTitle>
+              <CardTitle>{t('dashboard.extraByCategoryTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -411,7 +459,7 @@ export default function DashboardPage() {
                       {cat.icon_emoji ? `${cat.icon_emoji} ${cat.name}` : cat.name}
                     </span>
                     <span className="font-semibold">
-                      {formatCurrency(cat.total, cat.currency ?? currency)}
+                      {formatCurrency(cat.total, cat.currency ?? MIXED_KGS)}
                     </span>
                   </div>
                 ))}

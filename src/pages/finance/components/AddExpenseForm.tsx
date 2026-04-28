@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 
@@ -28,14 +28,26 @@ interface AddExpenseFormProps {
   onSuccess: () => void;
 }
 
+function previewKgs(usd: string, rate: string): number | null {
+  const u = parseFloat(usd);
+  const r = parseFloat(rate);
+  if (!Number.isFinite(u) || !Number.isFinite(r) || u <= 0 || r <= 0) return null;
+  return Math.round(u * r * 100) / 100;
+}
+
 export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFormProps) {
   const [clientId, setClientId] = useState<string>('');
   const [expenseDate, setExpenseDate] = useState(todayStr());
   const [categoryId, setCategoryId] = useState<string>('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('KGS');
+  const [amountUsd, setAmountUsd] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const kgsPreview = useMemo(
+    () => previewKgs(amountUsd, exchangeRate),
+    [amountUsd, exchangeRate],
+  );
 
   const mutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
@@ -47,8 +59,8 @@ export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFor
       setClientId('');
       setExpenseDate(todayStr());
       setCategoryId('');
-      setAmount('');
-      setCurrency('KGS');
+      setAmountUsd('');
+      setExchangeRate('');
       setNote('');
       setTimeout(() => setMessage(null), 3000);
       onSuccess();
@@ -64,16 +76,26 @@ export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFor
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientId || !categoryId || !amount) return;
+    const amt = parseFloat(amountUsd);
+    const rate = parseFloat(exchangeRate);
+    if (!clientId || !categoryId || !Number.isFinite(amt) || !Number.isFinite(rate)) return;
+    if (amt <= 0 || rate <= 0) return;
     mutation.mutate({
       client_id: clientId,
       expense_date: expenseDate,
       category_id: categoryId,
-      amount: parseFloat(amount),
-      currency: currency || undefined,
+      amount: amt,
+      exchange_rate_kgs_per_usd: rate,
+      currency: 'USD',
       note: note || undefined,
     });
   };
+
+  const canSubmit =
+    !!clientId &&
+    !!categoryId &&
+    parseFloat(amountUsd) > 0 &&
+    parseFloat(exchangeRate) > 0;
 
   return (
     <Card className="mt-4 max-w-lg">
@@ -132,21 +154,38 @@ export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFor
           </div>
 
           <div className="space-y-1.5">
-            <Label>Сумма</Label>
+            <Label>Сумма (USD)</Label>
             <Input
               type="number"
               step="0.01"
               min="0"
               placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              value={amountUsd}
+              onChange={(e) => setAmountUsd(e.target.value)}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Валюта</Label>
-            <Input value={currency} onChange={(e) => setCurrency(e.target.value)} />
+            <Label>Курс (KGS за 1 USD)</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              min="0"
+              placeholder="87.5"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
           </div>
+
+          {kgsPreview != null && (
+            <p className="text-sm text-muted-foreground">
+              Эквивалент:{' '}
+              <span className="font-medium tabular-nums text-foreground">
+                {kgsPreview.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KGS
+              </span>{' '}
+              (для сводок с WB)
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label>Примечание</Label>
@@ -167,7 +206,7 @@ export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFor
             </p>
           )}
 
-          <Button type="submit" disabled={mutation.isPending || !clientId || !categoryId || !amount}>
+          <Button type="submit" disabled={mutation.isPending || !canSubmit}>
             <Plus className="size-4" />
             {mutation.isPending ? 'Сохранение...' : 'Сохранить расход'}
           </Button>

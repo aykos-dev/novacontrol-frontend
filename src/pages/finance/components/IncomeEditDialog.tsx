@@ -42,6 +42,7 @@ export function IncomeEditDialog({
   const [clientId, setClientId] = useState('');
   const [incomeDate, setIncomeDate] = useState('');
   const [amount, setAmount] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [currency, setCurrency] = useState('');
   const [note, setNote] = useState('');
 
@@ -51,6 +52,11 @@ export function IncomeEditDialog({
     setClientId(income.client_id);
     setIncomeDate(income.income_date);
     setAmount(String(income.amount));
+    setExchangeRate(
+      income.exchange_rate_kgs_per_usd != null && income.exchange_rate_kgs_per_usd !== ''
+        ? String(income.exchange_rate_kgs_per_usd)
+        : '',
+    );
     setCurrency(income.currency);
     setNote(income.note ?? '');
   }
@@ -58,13 +64,18 @@ export function IncomeEditDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!income) return;
-    onSave(income.id, {
+    const body: Record<string, unknown> = {
       client_id: clientId,
       income_date: incomeDate,
       amount: parseFloat(amount),
       currency: currency || undefined,
       note: note || undefined,
-    });
+    };
+    const rate = parseFloat(exchangeRate);
+    if (Number.isFinite(rate) && rate > 0) {
+      body.exchange_rate_kgs_per_usd = rate;
+    }
+    onSave(income.id, body);
   };
 
   return (
@@ -99,11 +110,28 @@ export function IncomeEditDialog({
             <Input type="date" value={incomeDate} onChange={(e) => setIncomeDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Сумма</Label>
+            <Label>Сумма (USD)</Label>
             <Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Валюта</Label>
+            <Label>Курс (KGS за 1 USD)</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              min="0"
+              placeholder="Курс"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
+          </div>
+          {income?.amount_kgs != null && income.amount_kgs !== '' && (
+            <p className="text-xs text-muted-foreground">
+              Эквивалент:{' '}
+              {Number(income.amount_kgs).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KGS
+            </p>
+          )}
+          <div className="space-y-1.5">
+            <Label>Валюта записи</Label>
             <Input value={currency} onChange={(e) => setCurrency(e.target.value)} />
           </div>
           <div className="space-y-1.5">

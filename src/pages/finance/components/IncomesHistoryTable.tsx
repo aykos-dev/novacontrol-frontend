@@ -80,6 +80,7 @@ export function IncomesHistoryTable({ clients, isAdmin }: IncomesHistoryTablePro
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      queryClient.invalidateQueries({ queryKey: ['incomes-summary'] });
       setDeleteOpen(false);
       setDeleteIncome(null);
     },
@@ -92,12 +93,13 @@ export function IncomesHistoryTable({ clients, isAdmin }: IncomesHistoryTablePro
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      queryClient.invalidateQueries({ queryKey: ['incomes-summary'] });
       setEditOpen(false);
       setEditIncome(null);
     },
   });
 
-  const colCount = isAdmin ? 7 : 6;
+  const colCount = isAdmin ? 9 : 8;
 
   return (
     <div className="space-y-4">
@@ -145,8 +147,9 @@ export function IncomesHistoryTable({ clients, isAdmin }: IncomesHistoryTablePro
             <TableRow>
               <TableHead>Дата</TableHead>
               <TableHead>Клиент</TableHead>
-              <TableHead className="text-right">Сумма</TableHead>
-              <TableHead>Валюта</TableHead>
+              <TableHead className="text-right">USD</TableHead>
+              <TableHead className="text-right">Курс</TableHead>
+              <TableHead className="text-right">KGS</TableHead>
               <TableHead>Примечание</TableHead>
               <TableHead>Создал</TableHead>
               {isAdmin && <TableHead>Действия</TableHead>}
@@ -177,7 +180,19 @@ export function IncomesHistoryTable({ clients, isAdmin }: IncomesHistoryTablePro
                   <TableCell className="text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                     {Number(row.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}
                   </TableCell>
-                  <TableCell>{row.currency}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {row.exchange_rate_kgs_per_usd != null && row.exchange_rate_kgs_per_usd !== ''
+                      ? Number(row.exchange_rate_kgs_per_usd).toLocaleString('ru-RU', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        })
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">
+                    {row.amount_kgs != null && row.amount_kgs !== ''
+                      ? Number(row.amount_kgs).toLocaleString('ru-RU', { minimumFractionDigits: 2 })
+                      : Number(row.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}
+                  </TableCell>
                   <TableCell className="max-w-50 truncate">{row.note ?? '—'}</TableCell>
                   <TableCell>{row.creator?.name ?? row.creator?.username}</TableCell>
                   {isAdmin && (

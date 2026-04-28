@@ -88,6 +88,7 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses-summary'] });
       setDeleteOpen(false);
       setDeleteExpense(null);
     },
@@ -100,6 +101,7 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses-summary'] });
       setEditOpen(false);
       setEditExpense(null);
     },
@@ -174,8 +176,9 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
               <TableHead>Дата</TableHead>
               <TableHead>Клиент</TableHead>
               <TableHead>Категория</TableHead>
-              <TableHead className="text-right">Сумма</TableHead>
-              <TableHead>Валюта</TableHead>
+              <TableHead className="text-right">USD</TableHead>
+              <TableHead className="text-right">Курс</TableHead>
+              <TableHead className="text-right">KGS</TableHead>
               <TableHead>Примечание</TableHead>
               <TableHead>Создал</TableHead>
               {isAdmin && <TableHead>Действия</TableHead>}
@@ -185,7 +188,7 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: isAdmin ? 8 : 7 }).map((_, j) => (
+                  {Array.from({ length: isAdmin ? 10 : 9 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -194,7 +197,7 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
               ))
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 8 : 7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={isAdmin ? 10 : 9} className="py-10 text-center text-muted-foreground">
                   Нет расходов за выбранный период
                 </TableCell>
               </TableRow>
@@ -215,7 +218,19 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
                   <TableCell className="text-right font-medium tabular-nums">
                     {Number(expense.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}
                   </TableCell>
-                  <TableCell>{expense.currency}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {expense.exchange_rate_kgs_per_usd != null && expense.exchange_rate_kgs_per_usd !== ''
+                      ? Number(expense.exchange_rate_kgs_per_usd).toLocaleString('ru-RU', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        })
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">
+                    {expense.amount_kgs != null && expense.amount_kgs !== ''
+                      ? Number(expense.amount_kgs).toLocaleString('ru-RU', { minimumFractionDigits: 2 })
+                      : Number(expense.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}
+                  </TableCell>
                   <TableCell className="max-w-50 truncate">{expense.note ?? '—'}</TableCell>
                   <TableCell>{expense.creator?.name ?? expense.creator?.username}</TableCell>
                   {isAdmin && (

@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { format, subWeeks } from 'date-fns';
 import {
   ComposedChart,
   Bar,
-  Line,
-  LineChart,
   PieChart,
   Pie,
   Cell,
@@ -24,7 +23,7 @@ import {
   TrendingDown,
   DollarSign,
   Calculator,
-  Wallet,
+  Receipt,
   RefreshCw,
 } from 'lucide-react';
 
@@ -53,8 +52,18 @@ interface Client {
 }
 
 interface WbReport {
-  daily: { date: string; income: number; expenses: number }[];
-  totals: { income: number; expenses: number; retail_sales: number };
+  daily: {
+    date: string;
+    income: number;
+    expenses: number;
+    balance_change: number;
+  }[];
+  totals: {
+    income: number;
+    expenses: number;
+    retail_sales: number;
+    balance_change: number;
+  };
   breakdown: {
     retail_sales: number;
     ppvz_reward: number;
@@ -75,11 +84,6 @@ interface Balance {
   snapshot_at: string;
 }
 
-interface BalanceHistoryPoint {
-  date: string;
-  current: number;
-}
-
 interface ExpensesSummary {
   byCategory: {
     category_id: string;
@@ -92,6 +96,13 @@ interface ExpensesSummary {
   }[];
   grandTotal: number;
 }
+
+interface IncomesSummary {
+  grandTotal: number;
+}
+
+/** WB row aggregates mix with extra entries in KGS */
+const MIXED_KGS = 'KGS';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -131,8 +142,10 @@ function fmtCurrency(amount: number, currency: string): string {
     maximumFractionDigits: 2,
   });
   const sign = amount < 0 ? '-' : '';
-  const symbol = currency?.toUpperCase() === 'USD' ? '$' : '\u20BD';
-  if (currency?.toUpperCase() === 'USD') return `${sign}${symbol}${formatted}`;
+  const c = currency?.toUpperCase();
+  if (c === 'USD') return `${sign}$${formatted}`;
+  if (c === 'KGS') return `${sign}${formatted} KGS`;
+  const symbol = '\u20BD';
   return `${sign}${formatted} ${symbol}`;
 }
 
@@ -158,11 +171,18 @@ function formatTimestamp(value: string | null): string {
 }
 
 // ---------------------------------------------------------------------------
+// WB chart: third series «Изменение баланса» — hidden until we revisit WB parity.
+// ---------------------------------------------------------------------------
+
+const SHOW_WB_BALANCE_CHANGE_BAR = false;
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function ClientDetailPage() {
   const { id: clientId } = useParams<{ id: string }>();
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState(defaultDateRange);
   const resolved = useThemeStore((s) => s.resolved);
   const palette = getChartPalette(resolved);
@@ -184,7 +204,6 @@ export default function ClientDetailPage() {
   });
 
   const client = clientQuery.data;
-  const currency = client?.currency ?? 'RUB';
 
   // ---- WB Report ----
   const wbReportQuery = useQuery<WbReport>({
@@ -213,15 +232,6 @@ export default function ClientDetailPage() {
     enabled: !!clientId,
   });
 
-  const balanceHistoryQuery = useQuery<BalanceHistoryPoint[]>({
-    queryKey: ['wb-balance-history', clientId],
-    queryFn: async () => {
-      const { data } = await api.get(`/wb/balance/${clientId}/history?days=30`);
-      return data;
-    },
-    enabled: !!clientId,
-  });
-
   // ---- Expenses ----
   const expensesQuery = useQuery<ExpensesSummary>({
     queryKey: ['expenses-summary', clientId, dateRange],
@@ -234,13 +244,24 @@ export default function ClientDetailPage() {
     enabled: !!clientId,
   });
 
+  const incomesQuery = useQuery<IncomesSummary>({
+    queryKey: ['incomes-summary', clientId, dateRange],
+    queryFn: async () => {
+      const { data } = await api.get<IncomesSummary>(
+        `/incomes/summary?clientId=${clientId}&dateFrom=${dateRange.from}&dateTo=${dateRange.to}`,
+      );
+      return data;
+    },
+    enabled: !!clientId,
+  });
+
   // ---- Derived ----
   const wbIncome = wbReportQuery.data?.totals.income ?? 0;
   const wbExpenses = wbReportQuery.data?.totals.expenses ?? 0;
-  const retailSales = wbReportQuery.data?.totals.retail_sales ?? 0;
   const extraExpenses = expensesQuery.data?.grandTotal ?? 0;
+  const extraIncomes = incomesQuery.data?.grandTotal ?? 0;
   const revenue = wbIncome - wbExpenses;
-  const realRevenue = revenue - extraExpenses;
+  const realRevenue = revenue - extraExpenses + extraIncomes;
 
   const composedData = useMemo(() => {
     if (!wbReportQuery.data?.daily) return [];
@@ -252,6 +273,7 @@ export default function ClientDetailPage() {
         dateLabel: formatDateTick(d.date),
         income: d.income,
         expenses: -Math.abs(d.expenses),
+        balanceChange: d.balance_change,
         cumulativeBalance: cumulative,
       };
     });
@@ -269,7 +291,11 @@ export default function ClientDetailPage() {
   }, [expensesQuery.data, resolved]);
 
   const isLoading =
-    clientQuery.isLoading || wbReportQuery.isLoading || balanceQuery.isLoading;
+    clientQuery.isLoading ||
+    wbReportQuery.isLoading ||
+    balanceQuery.isLoading ||
+    expensesQuery.isLoading ||
+    incomesQuery.isLoading;
 
   const breakdown = wbReportQuery.data?.breakdown ?? null;
   const balance = balanceQuery.data;
@@ -315,9 +341,9 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading
-          ? Array.from({ length: 5 }).map((_, i) => (
+          ? Array.from({ length: 7 }).map((_, i) => (
               <Card key={i} className="border-l-4 border-l-muted">
                 <CardHeader className="pb-2">
                   <Skeleton className="h-4 w-20" />
@@ -329,14 +355,6 @@ export default function ClientDetailPage() {
             ))
           : (
               [
-                {
-                  label: 'Продажи',
-                  value: retailSales,
-                  icon: TrendingUp,
-                  border: 'border-l-primary',
-                  iconBg: 'bg-primary/15 dark:bg-primary/25',
-                  iconColor: 'text-primary',
-                },
                 {
                   label: 'Приход WB',
                   value: wbIncome,
@@ -354,12 +372,20 @@ export default function ClientDetailPage() {
                   iconColor: 'text-[var(--wb-violet)]',
                 },
                 {
-                  label: 'Прибыль WB',
+                  label: 'Прибыль WB (розница − сборы)',
                   value: revenue,
                   icon: DollarSign,
                   border: 'border-l-chart-5',
                   iconBg: 'bg-chart-5/15 dark:bg-chart-5/25',
                   iconColor: 'text-chart-5',
+                },
+                {
+                  label: 'Доп. расходы (KGS)',
+                  value: extraExpenses,
+                  icon: Receipt,
+                  border: 'border-l-orange-600',
+                  iconBg: 'bg-orange-600/15 dark:bg-orange-600/25',
+                  iconColor: 'text-orange-600 dark:text-orange-400',
                 },
                 {
                   label: 'Чистая прибыль',
@@ -386,7 +412,7 @@ export default function ClientDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-2xl font-bold tracking-tight tabular-nums">
-                      {fmtCurrency(card.value, currency)}
+                      {fmtCurrency(card.value, MIXED_KGS)}
                     </p>
                   </CardContent>
                 </Card>
@@ -397,7 +423,7 @@ export default function ClientDetailPage() {
       {/* Balance card */}
       {balance && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
+          {/* <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Wallet className="size-4 text-muted-foreground" />
@@ -423,10 +449,10 @@ export default function ClientDetailPage() {
                 Обновлено: {formatTimestamp(balance.snapshot_at)}
               </p>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Balance history sparkline */}
-          <Card>
+          {/* <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Динамика баланса (30 дней)</CardTitle>
             </CardHeader>
@@ -468,20 +494,20 @@ export default function ClientDetailPage() {
                 </ResponsiveContainer>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       )}
 
       {/* Income/Expense chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Доходы и расходы WB</CardTitle>
+          <CardTitle>{t('clientDetail.chartTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {wbReportQuery.isLoading ? (
             <ChartSkeleton />
           ) : composedData.length === 0 ? (
-            <EmptyChart message="Нет данных WB за выбранный период" />
+            <EmptyChart message={t('clientDetail.emptyChart')} />
           ) : (
             <div className="flex flex-col gap-6 lg:flex-row">
               <div className="min-w-0 flex-1">
@@ -500,27 +526,27 @@ export default function ClientDetailPage() {
                     <ReferenceLine y={0} stroke={palette.referenceLine} strokeDasharray="3 3" />
                     <Bar
                       dataKey="income"
-                      name="Приход"
+                      name={t('clientDetail.chartIncome')}
                       fill={palette.incomeBar}
                       radius={[4, 4, 0, 0]}
-                      maxBarSize={32}
+                      maxBarSize={SHOW_WB_BALANCE_CHANGE_BAR ? 26 : 32}
                     />
                     <Bar
                       dataKey="expenses"
-                      name="Расход"
+                      name={t('clientDetail.chartExpense')}
                       fill={palette.expenseBar}
                       radius={[0, 0, 4, 4]}
-                      maxBarSize={32}
+                      maxBarSize={SHOW_WB_BALANCE_CHANGE_BAR ? 26 : 32}
                     />
-                    {/* <Line
-                      type="monotone"
-                      dataKey="cumulativeBalance"
-                      name="Изменение баланса"
-                      stroke={palette.balanceLine}
-                      strokeDasharray="6 3"
-                      strokeWidth={2}
-                      dot={false}
-                    /> */}
+                    {SHOW_WB_BALANCE_CHANGE_BAR ? (
+                      <Bar
+                        dataKey="balanceChange"
+                        name={t('clientDetail.chartBalanceChange')}
+                        fill={palette.balanceChangeBar}
+                        radius={[4, 4, 4, 4]}
+                        maxBarSize={26}
+                      />
+                    ) : null}
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -653,13 +679,12 @@ function ChartSkeleton() {
 }
 
 function EmptyChart({ message }: { message: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-[380px] flex-col items-center justify-center gap-2 text-center text-muted-foreground">
       <RefreshCw className="size-8 text-muted-foreground/50" />
       <p className="text-sm font-medium text-foreground">{message}</p>
-      <p className="max-w-sm text-xs">
-        Выполните синхронизацию или расширьте диапазон дат.
-      </p>
+      <p className="max-w-sm text-xs">{t('clientDetail.emptyChartHint')}</p>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2, Clock, Settings2 } from 'lucide-react';
 import api from '@/lib/api';
@@ -16,12 +17,13 @@ interface SchedulerJob {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   if (user?.role !== 'ADMIN') {
     return (
       <div className="mx-auto max-w-lg p-6 text-center text-muted-foreground">
-        Раздел доступен только администраторам.
+        {t('settings.adminOnly')}
       </div>
     );
   }
@@ -31,12 +33,9 @@ export default function SettingsPage() {
       <header className="space-y-1">
         <div className="flex items-center gap-2 text-primary">
           <Settings2 className="size-7" aria-hidden />
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Настройки</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">{t('settings.title')}</h1>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Запуск по расписанию дублируется cron&apos;ом на сервере. Здесь можно вручную выполнить ту же
-          задачу один раз — полезно для проверки или срочного обновления.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('settings.subtitle')}</p>
       </header>
 
       <SchedulerJobsPanel />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
@@ -37,19 +38,20 @@ interface ExpenseCategoryRow {
 }
 
 export default function ExpenseCategoriesPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   if (user?.role !== 'ADMIN') {
     return (
       <div className="mx-auto max-w-lg p-6 text-center text-muted-foreground">
-        Раздел доступен только администраторам.
+        {t('settings.adminOnly')}
       </div>
     );
   }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Категории расходов</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t('expenseCategories.pageTitle')}</h1>
       <CategoriesAdminPanel />
     </div>
   );

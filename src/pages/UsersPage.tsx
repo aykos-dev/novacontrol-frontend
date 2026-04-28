@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Plus, Pencil, Trash2, ShieldAlert } from 'lucide-react';
@@ -68,6 +69,7 @@ const emptyForm: UserFormData = {
 // ---------------------------------------------------------------------------
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -228,7 +230,7 @@ export default function UsersPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('users.pageTitle')}</h1>
         <Button onClick={openCreateDialog}>
           <Plus className="size-4" />
           Add User

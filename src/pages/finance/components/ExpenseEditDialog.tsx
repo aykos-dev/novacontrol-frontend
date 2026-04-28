@@ -48,6 +48,7 @@ export function ExpenseEditDialog({
   const [expenseDate, setExpenseDate] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [currency, setCurrency] = useState('');
   const [note, setNote] = useState('');
 
@@ -66,6 +67,11 @@ export function ExpenseEditDialog({
     setExpenseDate(expense.expense_date);
     setCategoryId(expense.category_id);
     setAmount(String(expense.amount));
+    setExchangeRate(
+      expense.exchange_rate_kgs_per_usd != null && expense.exchange_rate_kgs_per_usd !== ''
+        ? String(expense.exchange_rate_kgs_per_usd)
+        : '',
+    );
     setCurrency(expense.currency);
     setNote(expense.note ?? '');
   }
@@ -73,14 +79,19 @@ export function ExpenseEditDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expense) return;
-    onSave(expense.id, {
+    const body: Record<string, unknown> = {
       client_id: clientId,
       expense_date: expenseDate,
       category_id: categoryId,
       amount: parseFloat(amount),
       currency: currency || undefined,
       note: note || undefined,
-    });
+    };
+    const rate = parseFloat(exchangeRate);
+    if (Number.isFinite(rate) && rate > 0) {
+      body.exchange_rate_kgs_per_usd = rate;
+    }
+    onSave(expense.id, body);
   };
 
   return (
@@ -138,7 +149,7 @@ export function ExpenseEditDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Сумма</Label>
+            <Label>Сумма (USD)</Label>
             <Input
               type="number"
               step="0.01"
@@ -149,7 +160,26 @@ export function ExpenseEditDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Валюта</Label>
+            <Label>Курс (KGS за 1 USD)</Label>
+            <Input
+              type="number"
+              step="0.000001"
+              min="0"
+              placeholder="Обязательно для пересчёта в KGS"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
+          </div>
+
+          {expense?.amount_kgs != null && expense.amount_kgs !== '' && (
+            <p className="text-xs text-muted-foreground">
+              Сохранённый эквивалент:{' '}
+              {Number(expense.amount_kgs).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KGS
+            </p>
+          )}
+
+          <div className="space-y-1.5">
+            <Label>Валюта записи</Label>
             <Input value={currency} onChange={(e) => setCurrency(e.target.value)} />
           </div>
 

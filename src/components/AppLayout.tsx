@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   Users,
   Receipt,
   BarChart3,
-  Wallet,
   UserCog,
   LogOut,
   Menu,
@@ -16,6 +17,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   Sheet,
   SheetTrigger,
@@ -25,27 +27,30 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/clients', icon: Users, label: 'Clients' },
-  { to: '/finance', icon: Receipt, label: 'Расходы и доходы' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/balances', icon: Wallet, label: 'Balances' },
+interface NavConfigItem {
+  to: string;
+  icon: LucideIcon;
+  labelKey: string;
+}
+
+const MAIN_NAV: NavConfigItem[] = [
+  { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+  { to: '/clients', icon: Users, labelKey: 'nav.clients' },
+  { to: '/finance', icon: Receipt, labelKey: 'nav.finance' },
+  { to: '/analytics', icon: BarChart3, labelKey: 'nav.analytics' },
 ];
 
-const adminNavItems = [
-  { to: '/expense-categories', icon: Tags, label: 'Категории расходов' },
-  { to: '/users', icon: UserCog, label: 'Users' },
-  { to: '/settings', icon: Settings2, label: 'Настройки' },
+const ADMIN_NAV: NavConfigItem[] = [
+  { to: '/expense-categories', icon: Tags, labelKey: 'nav.expenseCategories' },
+  { to: '/users', icon: UserCog, labelKey: 'nav.users' },
+  { to: '/settings', icon: Settings2, labelKey: 'nav.settings' },
 ];
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
-  const allItems = [
-    ...navItems,
-    ...(user?.role === 'ADMIN' ? adminNavItems : []),
-  ];
+  const allItems = [...MAIN_NAV, ...(user?.role === 'ADMIN' ? ADMIN_NAV : [])];
 
   return (
     <nav className="flex flex-col gap-1 px-3">
@@ -65,7 +70,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           }
         >
           <item.icon className="size-4 shrink-0" />
-          {item.label}
+          {t(item.labelKey)}
         </NavLink>
       ))}
     </nav>
@@ -73,6 +78,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="relative flex h-full flex-col">
       <div
@@ -86,9 +92,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <div className="min-w-0">
             <span className="font-heading block truncate text-lg font-semibold tracking-tight text-sidebar-foreground">
-              Analytics
+              {t('app.brand')}
             </span>
-            <p className="truncate text-xs text-muted-foreground">Кабинет продавца</p>
+            <p className="truncate text-xs text-muted-foreground">{t('app.tagline')}</p>
           </div>
         </div>
       </div>
@@ -100,6 +106,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function AppLayout() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const fetchProfile = useAuthStore((s) => s.fetchProfile);
@@ -118,36 +125,32 @@ export default function AppLayout() {
   return (
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden md:flex-row">
-        {/* Desktop sidebar: stays fixed in the viewport; main area scrolls separately */}
         <aside className="relative hidden min-h-0 w-64 shrink-0 border-r border-sidebar-border bg-sidebar/90 backdrop-blur-md md:flex md:flex-col">
           <SidebarContent />
         </aside>
 
-        {/* Mobile sidebar */}
         <SheetContent side="left" className="w-[min(20rem,100vw)] border-sidebar-border bg-sidebar p-0">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SheetDescription className="sr-only">Main navigation menu</SheetDescription>
+          <SheetTitle className="sr-only">{t('app.navigation')}</SheetTitle>
+          <SheetDescription className="sr-only">{t('app.navDescription')}</SheetDescription>
           <SidebarContent onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
 
-        {/* Main area: only this column scrolls on desktop; header stays above the scroll region */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header className="z-40 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-card/85 px-4 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-card/75 md:px-6">
             <div className="flex min-w-0 items-center gap-2">
               <SheetTrigger
-                render={
-                  <Button variant="outline" size="icon" className="shrink-0 md:hidden" />
-                }
+                render={<Button variant="outline" size="icon" className="shrink-0 md:hidden" />}
               >
                 <Menu className="size-5" />
-                <span className="sr-only">Открыть меню</span>
+                <span className="sr-only">{t('app.openMenu')}</span>
               </SheetTrigger>
               <p className="hidden min-w-0 truncate font-heading text-sm font-semibold text-foreground sm:block md:hidden">
-                WB Analytics
+                {t('app.mobileTitle')}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+              <LanguageSwitcher />
               <ThemeToggle className="shrink-0" />
               {user && (
                 <>
@@ -164,7 +167,7 @@ export default function AppLayout() {
               )}
               <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={handleLogout}>
                 <LogOut className="size-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t('app.logout')}</span>
               </Button>
             </div>
           </header>

@@ -6,6 +6,7 @@ export function getChartPalette(resolved: ResolvedTheme) {
     return {
       incomeBar: '#f0abfc',
       expenseBar: '#c4b5fd',
+      balanceChangeBar: '#22d3ee',
       balanceLine: '#94a3b8',
       referenceLine: 'rgba(148, 163, 184, 0.45)',
       gridStroke: 'rgba(148, 163, 184, 0.12)',
@@ -14,11 +15,13 @@ export function getChartPalette(resolved: ResolvedTheme) {
       wbRevenueLine: '#f0abfc',
       realRevenueLine: '#6ee7b7',
       extraExpensesLine: '#fca5a5',
+      extraIncomesLine: '#5eead4',
     };
   }
   return {
     incomeBar: '#cb11ab',
     expenseBar: '#6d28d9',
+    balanceChangeBar: '#0891b2',
     balanceLine: '#64748b',
     referenceLine: '#cbd5e1',
     gridStroke: '#e2e8f0',
@@ -27,5 +30,6 @@ export function getChartPalette(resolved: ResolvedTheme) {
     wbRevenueLine: '#cb11ab',
     realRevenueLine: '#059669',
     extraExpensesLine: '#dc2626',
+    extraIncomesLine: '#0d9488',
   };
 }

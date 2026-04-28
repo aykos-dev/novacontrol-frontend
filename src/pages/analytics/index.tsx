@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 
 import api from '@/lib/api';
@@ -26,6 +27,7 @@ import { formatDateTick } from './utils/format';
 import { selectItemsClients } from './utils/select-items';
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState(defaultDateRange);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const resolved = useThemeStore((s) => s.resolved);
@@ -80,6 +82,17 @@ export default function AnalyticsPage() {
     enabled: !!effectiveClientId,
   });
 
+  const dailyIncomesQuery = useQuery<DailyExpenseRow[]>({
+    queryKey: ['incomes-daily', effectiveClientId, dateRange],
+    queryFn: async () => {
+      const { data } = await api.get<DailyExpenseRow[]>(
+        `/incomes/daily-totals?clientId=${effectiveClientId}&dateFrom=${dateRange.from}&dateTo=${dateRange.to}`,
+      );
+      return data;
+    },
+    enabled: !!effectiveClientId,
+  });
+
   const composedChartData = useMemo(() => {
     if (!wbReportQuery.data?.daily) return [];
     let cumulative = 0;
@@ -115,31 +128,38 @@ export default function AnalyticsPage() {
     for (const row of dailyExpensesQuery.data ?? []) {
       extraByDate.set(row.date, row.total);
     }
+    const incomesByDate = new Map<string, number>();
+    for (const row of dailyIncomesQuery.data ?? []) {
+      incomesByDate.set(row.date, row.total);
+    }
     return daily.map((d) => {
       const wbRevenue = d.income - Math.abs(d.expenses);
       const extra = extraByDate.get(d.date) ?? 0;
+      const extraInc = incomesByDate.get(d.date) ?? 0;
       return {
         date: d.date,
         dateLabel: formatDateTick(d.date),
         wbRevenue,
-        realRevenue: wbRevenue - extra,
+        realRevenue: wbRevenue - extra + extraInc,
         extraExpenses: extra,
+        extraIncomes: extraInc,
       };
     });
-  }, [wbReportQuery.data, dailyExpensesQuery.data]);
+  }, [wbReportQuery.data, dailyExpensesQuery.data, dailyIncomesQuery.data]);
 
   const isWbLoading = wbReportQuery.isLoading;
-  const isExpensesLoading = expensesQuery.isLoading || dailyExpensesQuery.isLoading;
+  const isExpensesLoading =
+    expensesQuery.isLoading ||
+    dailyExpensesQuery.isLoading ||
+    dailyIncomesQuery.isLoading;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
-          Аналитика
+          {t('analytics.title')}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Графики доходов, расходов и прибыльности.
-        </p>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('analytics.subtitle')}</p>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -150,7 +170,7 @@ export default function AnalyticsPage() {
           items={clientSelectItems}
         >
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="Выберите клиента" />
+            <SelectValue placeholder={t('analytics.selectPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             {clients.map((client) => (

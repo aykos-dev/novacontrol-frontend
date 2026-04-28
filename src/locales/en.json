@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "clients": "Clients",
+    "finance": "Income & expenses",
+    "analytics": "Analytics",
+    "expenseCategories": "Expense categories",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "app": {
+    "brand": "Analytics",
+    "tagline": "Seller workspace",
+    "mobileTitle": "WB Analytics",
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "navigation": "Navigation",
+    "navDescription": "Main navigation",
+    "language": "Language"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of income, expenses, and revenue across your clients.",
+    "selectPlaceholder": "Client",
+    "allClients": "All clients",
+    "cards": {
+      "wbIncome": "WB gross revenue",
+      "wbExpenses": "WB expenses",
+      "revenueRetailMinusFees": "Revenue (retail − fees)",
+      "wbBalanceChange": "WB balance change",
+      "extraExpensesKgs": "Extra expenses (KGS)",
+      "extraIncomesKgs": "Extra top‑ups (KGS)",
+      "realRevenue": "Net revenue"
+    },
+    "wbBreakdownTitle": "WB expense breakdown",
+    "extraByCategoryTitle": "Extra expenses by category",
+    "breakdown": {
+      "ppvz_reward": "PPVZ reward",
+      "delivery_rub": "Delivery",
+      "storage_fee": "Storage",
+      "penalty": "Penalty",
+      "deduction": "Deduction",
+      "acceptance": "Acceptance",
+      "rebill_logistic_cost": "Rebill logistics"
+    }
+  },
+  "finance": {
+    "pageTitle": "Income & top‑ups",
+    "tabExpense": "Expenses",
+    "tabIncome": "Top‑ups",
+    "tabHistory": "History"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Charts for revenue, expenses, and profitability.",
+    "selectPlaceholder": "Choose client"
+  },
+  "login": {
+    "brandTitle": "WB Analytics",
+    "title": "Sign in",
+    "subtitle": "Seller workspace sign‑in",
+    "username": "Username",
+    "password": "Password",
+    "placeholderUser": "Username",
+    "placeholderPass": "Password",
+    "submit": "Sign in",
+    "signingIn": "Signing in…",
+    "telegramBanner": "Signing in with Telegram…",
+    "errors": {
+      "telegramFailed": "Telegram sign‑in failed",
+      "loginFailed": "Sign‑in failed"
+    }
+  },
+  "clients": {
+    "pageTitle": "Clients"
+  },
+  "clientDetail": {
+    "chartTitle": "WB income & expenses",
+    "chartIncome": "Income",
+    "chartExpense": "Expense",
+    "chartBalanceChange": "Balance change",
+    "emptyChart": "No WB data for the selected period",
+    "emptyChartHint": "Run a sync or widen the date range."
+  },
+  "users": {
+    "pageTitle": "Users"
+  },
+  "expenseCategories": {
+    "pageTitle": "Expense categories"
+  },
+  "settings": {
+    "adminOnly": "This section is only available to administrators.",
+    "title": "Settings",
+    "subtitle": "Scheduler and maintenance tasks"
+  },
+  "language": {
+    "ru": "Русский",
+    "en": "English"
+  }
+}

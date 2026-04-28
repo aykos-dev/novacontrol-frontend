@@ -18,8 +18,12 @@ export interface Expense {
   client_id: string;
   expense_date: string;
   category_id: string;
+  /** USD */
   amount: number;
   currency: string;
+  exchange_rate_kgs_per_usd?: string | number | null;
+  /** Normalized KGS for WB mixes */
+  amount_kgs?: string | number | null;
   note: string | null;
   created_at: string;
   client: { name: string };
@@ -40,6 +44,8 @@ export interface Income {
   income_date: string;
   amount: number;
   currency: string;
+  exchange_rate_kgs_per_usd?: string | number | null;
+  amount_kgs?: string | number | null;
   note: string | null;
   created_at: string;
   client: { name: string };
