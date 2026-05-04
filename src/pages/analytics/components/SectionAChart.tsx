@@ -109,7 +109,7 @@ export function SectionAChart({ data, breakdown, isLoading }: SectionAChartProps
                     dataKey="expenses"
                     name="Расход"
                     fill={palette.expenseBar}
-                    radius={[0, 0, 4, 4]}
+                    radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                     isAnimationActive
                     animationDuration={900}
