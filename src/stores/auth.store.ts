@@ -8,6 +8,11 @@ interface User {
   role: 'ADMIN' | 'VIEWER';
 }
 
+const telegramAuthInflight = new Map<
+  string,
+  Promise<{ access_token: string }>
+>();
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -28,7 +33,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: data.access_token, isAuthenticated: true });
   },
   loginWithTelegram: async (initData: string) => {
-    const { data } = await api.post('/auth/telegram', { initData });
+    let inflight = telegramAuthInflight.get(initData);
+    if (!inflight) {
+      inflight = api
+        .post('/auth/telegram', { initData })
+        .then((r) => r.data as { access_token: string })
+        .finally(() => {
+          telegramAuthInflight.delete(initData);
+        });
+      telegramAuthInflight.set(initData, inflight);
+    }
+    const data = await inflight;
     localStorage.setItem('token', data.access_token);
     set({ token: data.access_token, isAuthenticated: true });
   },
