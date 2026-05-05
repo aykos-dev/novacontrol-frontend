@@ -30,7 +30,8 @@
       "wbBalanceChange": "WB balance change",
       "extraExpensesKgs": "Extra expenses (KGS)",
       "extraIncomesKgs": "Extra top‑ups (KGS)",
-      "realRevenue": "Net revenue"
+      "realRevenue": "Net revenue",
+      "extraBalanceKgs": "Extra funds balance"
     },
     "wbBreakdownTitle": "WB expense breakdown",
     "extraByCategoryTitle": "Extra expenses by category",

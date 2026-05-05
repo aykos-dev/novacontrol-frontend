@@ -48,6 +48,7 @@ function SchedulerJobsPanel() {
   const [lastResult, setLastResult] = useState<{
     label: string;
     ok: boolean;
+    started?: boolean;
     error?: string;
   } | null>(null);
 
@@ -61,11 +62,13 @@ function SchedulerJobsPanel() {
 
   const runMutation = useMutation({
     mutationFn: async ({ id }: { id: string; label: string }) => {
-      const { data } = await api.post<{ ok: boolean; jobId: string }>(`/wb/scheduler/jobs/${id}/run`);
+      const { data } = await api.post<{ ok: boolean; jobId: string; started: boolean }>(
+        `/wb/scheduler/jobs/${id}/run`,
+      );
       return data;
     },
-    onSuccess: (_data, variables) => {
-      setLastResult({ label: variables.label, ok: true });
+    onSuccess: (data, variables) => {
+      setLastResult({ label: variables.label, ok: true, started: data.started });
       void queryClient.invalidateQueries({ queryKey: ['clients'] });
       void queryClient.invalidateQueries({ queryKey: ['wb'] });
     },
@@ -118,7 +121,9 @@ function SchedulerJobsPanel() {
           }
         >
           {lastResult.ok
-            ? `Готово: ${lastResult.label}.`
+            ? lastResult.started
+              ? `Запущено: ${lastResult.label}. Данные будут обновляться в фоне.`
+              : `Уже выполняется: ${lastResult.label}.`
             : lastResult.error ?? 'Ошибка'}
         </p>
       )}

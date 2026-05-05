@@ -8,6 +8,7 @@ import {
   Receipt,
   DollarSign,
   Calculator,
+  WalletCards,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -262,11 +263,11 @@ export default function DashboardPage() {
 
   const wbIncome = wbReportQuery.data?.totals.income ?? 0;
   const wbExpenses = wbReportQuery.data?.totals.expenses ?? 0;
-  const wbBalanceChange = wbReportQuery.data?.totals.balance_change ?? 0;
   const extraExpenses = expensesQuery.data?.grandTotal ?? 0;
   const extraIncomes = incomesQuery.data?.grandTotal ?? 0;
   const revenue = wbIncome - wbExpenses;
-  const realRevenue = revenue - extraExpenses + extraIncomes;
+  const realRevenue = revenue - extraExpenses;
+  const extraBalance = extraIncomes - extraExpenses;
 
   const isLoading =
     clientsQuery.isLoading ||
@@ -318,6 +319,14 @@ export default function DashboardPage() {
         bgAccent: 'bg-chart-4/15 dark:bg-chart-4/25',
       },
       {
+        label: t('dashboard.cards.extraIncomesKgs'),
+        value: extraIncomes,
+        icon: WalletCards,
+        borderColor: 'border-l-emerald-500',
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        bgAccent: 'bg-emerald-500/15 dark:bg-emerald-500/25',
+      },
+      {
         label: t('dashboard.cards.realRevenue'),
         value: realRevenue,
         icon: Calculator,
@@ -325,16 +334,27 @@ export default function DashboardPage() {
         iconColor: 'text-chart-3',
         bgAccent: 'bg-chart-3/15 dark:bg-chart-3/25',
       },
+      {
+        label: t('dashboard.cards.extraBalanceKgs'),
+        value: extraBalance,
+        icon: DollarSign,
+        borderColor: extraBalance <= 0 ? 'border-l-destructive' : 'border-l-cyan-500',
+        iconColor: extraBalance <= 0 ? 'text-destructive' : 'text-cyan-600 dark:text-cyan-400',
+        bgAccent:
+          extraBalance <= 0
+            ? 'bg-destructive/15 dark:bg-destructive/25'
+            : 'bg-cyan-500/15 dark:bg-cyan-500/25',
+      },
     ],
     [
       t,
       wbIncome,
       wbExpenses,
       revenue,
-      wbBalanceChange,
       extraExpenses,
       extraIncomes,
       realRevenue,
+      extraBalance,
     ],
   );
 

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ClientsPage from '@/pages/ClientsPage';
-import ClientDetailPage from '@/pages/ClientDetailPage';
+import ClientDetailPage from '@/pages/client-detail';
 import ExpenseCategoriesPage from '@/pages/ExpenseCategoriesPage';
 import BalancesPage from '@/pages/BalancesPage';
 import UsersPage from '@/pages/UsersPage';

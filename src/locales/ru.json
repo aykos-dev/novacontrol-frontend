@@ -30,7 +30,8 @@
       "wbBalanceChange": "Изменение баланса WB",
       "extraExpensesKgs": "Доп. расходы (KGS)",
       "extraIncomesKgs": "Доп. пополнения (KGS)",
-      "realRevenue": "Чистая выручка"
+      "realRevenue": "Чистая выручка",
+      "extraBalanceKgs": "Баланс доп. средств"
     },
     "wbBreakdownTitle": "Разбивка расходов WB",
     "extraByCategoryTitle": "Доп. расходы по категориям",

@@ -15,10 +15,8 @@ import { useThemeStore } from '@/stores/theme.store';
 
 import { SectionAChart } from './components/SectionAChart';
 import { SectionBPieChart } from './components/SectionBPieChart';
-import { SectionCRevenueChart } from './components/SectionCRevenueChart';
 import type {
   Client,
-  DailyExpenseRow,
   ExpensesSummary,
   WbReport,
 } from './types';
@@ -71,28 +69,6 @@ export default function AnalyticsPage() {
     enabled: !!effectiveClientId,
   });
 
-  const dailyExpensesQuery = useQuery<DailyExpenseRow[]>({
-    queryKey: ['expenses-daily', effectiveClientId, dateRange],
-    queryFn: async () => {
-      const { data } = await api.get<DailyExpenseRow[]>(
-        `/expenses/daily-totals?clientId=${effectiveClientId}&dateFrom=${dateRange.from}&dateTo=${dateRange.to}`,
-      );
-      return data;
-    },
-    enabled: !!effectiveClientId,
-  });
-
-  const dailyIncomesQuery = useQuery<DailyExpenseRow[]>({
-    queryKey: ['incomes-daily', effectiveClientId, dateRange],
-    queryFn: async () => {
-      const { data } = await api.get<DailyExpenseRow[]>(
-        `/incomes/daily-totals?clientId=${effectiveClientId}&dateFrom=${dateRange.from}&dateTo=${dateRange.to}`,
-      );
-      return data;
-    },
-    enabled: !!effectiveClientId,
-  });
-
   const composedChartData = useMemo(() => {
     if (!wbReportQuery.data?.daily) return [];
     let cumulative = 0;
@@ -121,37 +97,8 @@ export default function AnalyticsPage() {
 
   const pieTotal = expensesQuery.data?.grandTotal ?? 0;
 
-  const revenueChartData = useMemo(() => {
-    if (!wbReportQuery.data?.daily) return [];
-    const daily = wbReportQuery.data.daily;
-    const extraByDate = new Map<string, number>();
-    for (const row of dailyExpensesQuery.data ?? []) {
-      extraByDate.set(row.date, row.total);
-    }
-    const incomesByDate = new Map<string, number>();
-    for (const row of dailyIncomesQuery.data ?? []) {
-      incomesByDate.set(row.date, row.total);
-    }
-    return daily.map((d) => {
-      const wbRevenue = d.income - Math.abs(d.expenses);
-      const extra = extraByDate.get(d.date) ?? 0;
-      const extraInc = incomesByDate.get(d.date) ?? 0;
-      return {
-        date: d.date,
-        dateLabel: formatDateTick(d.date),
-        wbRevenue,
-        realRevenue: wbRevenue - extra + extraInc,
-        extraExpenses: extra,
-        extraIncomes: extraInc,
-      };
-    });
-  }, [wbReportQuery.data, dailyExpensesQuery.data, dailyIncomesQuery.data]);
-
   const isWbLoading = wbReportQuery.isLoading;
-  const isExpensesLoading =
-    expensesQuery.isLoading ||
-    dailyExpensesQuery.isLoading ||
-    dailyIncomesQuery.isLoading;
+  const isExpensesLoading = expensesQuery.isLoading;
 
   return (
     <div className="space-y-6">
@@ -188,7 +135,6 @@ export default function AnalyticsPage() {
         isLoading={isWbLoading}
       />
       <SectionBPieChart data={pieData} total={pieTotal} isLoading={isExpensesLoading} />
-      <SectionCRevenueChart data={revenueChartData} isLoading={isWbLoading || isExpensesLoading} />
     </div>
   );
 }
