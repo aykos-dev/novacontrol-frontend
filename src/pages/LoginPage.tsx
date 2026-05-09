@@ -65,11 +65,14 @@ export default function LoginPage() {
       await login(username, password);
       navigate('/');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || t('login.errors.loginFailed'));
-      } else {
-        setError(t('login.errors.loginFailed'));
+      let msg = t('login.errors.loginFailed');
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const d = err.response.data as { message?: string | string[] };
+        msg = Array.isArray(d.message) ? d.message.join(', ') : (d.message ?? msg);
+      } else if (err instanceof Error) {
+        msg = err.message || msg;
       }
+      setError(msg);
     } finally {
       setLoading(false);
     }

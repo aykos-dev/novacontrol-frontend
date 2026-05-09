@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { displayToIso, isoToDisplay } from '@/lib/date-format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -117,9 +118,10 @@ export function AddIncomeForm({ clients, onSuccess }: AddIncomeFormProps) {
           <div className="space-y-1.5">
             <Label>Дата</Label>
             <Input
-              type="date"
-              value={incomeDate}
-              onChange={(e) => setIncomeDate(e.target.value)}
+              inputMode="numeric"
+              placeholder="dd-mm-yyyy"
+              value={isoToDisplay(incomeDate)}
+              onChange={(e) => setIncomeDate(displayToIso(e.target.value))}
             />
           </div>
 

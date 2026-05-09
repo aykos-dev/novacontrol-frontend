@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { LucideIcon } from 'lucide-react';
 import {
-  LayoutDashboard,
-  Users,
-  Receipt,
-  BarChart3,
-  UserCog,
   LogOut,
   Menu,
-  Tags,
-  Settings2,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
+import { ALL_SECTIONS, canAccessSection } from '@/lib/sections';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -27,30 +20,13 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-interface NavConfigItem {
-  to: string;
-  icon: LucideIcon;
-  labelKey: string;
-}
-
-const MAIN_NAV: NavConfigItem[] = [
-  { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
-  { to: '/clients', icon: Users, labelKey: 'nav.clients' },
-  { to: '/finance', icon: Receipt, labelKey: 'nav.finance' },
-  { to: '/analytics', icon: BarChart3, labelKey: 'nav.analytics' },
-];
-
-const ADMIN_NAV: NavConfigItem[] = [
-  { to: '/expense-categories', icon: Tags, labelKey: 'nav.expenseCategories' },
-  { to: '/users', icon: UserCog, labelKey: 'nav.users' },
-  { to: '/settings', icon: Settings2, labelKey: 'nav.settings' },
-];
-
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
-  const allItems = [...MAIN_NAV, ...(user?.role === 'ADMIN' ? ADMIN_NAV : [])];
+  const allItems = ALL_SECTIONS.filter((section) =>
+    canAccessSection(user, section.id),
+  );
 
   return (
     <nav className="flex flex-col gap-1 px-3">

@@ -14,7 +14,7 @@ export function fmtThousands(value: number): string {
 export function formatDateTick(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    return format(d, 'dd.MM');
+    return format(d, 'dd-MM');
   } catch {
     return dateStr;
   }

@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { canAccessSection } from '@/lib/sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +42,7 @@ export default function ExpenseCategoriesPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
-  if (user?.role !== 'ADMIN') {
+  if (!canAccessSection(user, 'expenseCategories')) {
     return (
       <div className="mx-auto max-w-lg p-6 text-center text-muted-foreground">
         {t('settings.adminOnly')}

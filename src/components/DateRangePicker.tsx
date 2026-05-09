@@ -1,6 +1,7 @@
 import { subWeeks, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { displayToIso, isoToDisplay } from '@/lib/date-format';
 
 interface DateRange {
   from: string;
@@ -62,16 +63,18 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
       </div>
       <div className="flex items-center gap-2">
         <Input
-          type="date"
-          value={value.from}
-          onChange={(e) => onChange({ ...value, from: e.target.value })}
+          inputMode="numeric"
+          placeholder="dd-mm-yyyy"
+          value={isoToDisplay(value.from)}
+          onChange={(e) => onChange({ ...value, from: displayToIso(e.target.value) })}
           className="w-36"
         />
         <span className="text-sm text-muted-foreground">to</span>
         <Input
-          type="date"
-          value={value.to}
-          onChange={(e) => onChange({ ...value, to: e.target.value })}
+          inputMode="numeric"
+          placeholder="dd-mm-yyyy"
+          value={isoToDisplay(value.to)}
+          onChange={(e) => onChange({ ...value, to: displayToIso(e.target.value) })}
           className="w-36"
         />
       </div>

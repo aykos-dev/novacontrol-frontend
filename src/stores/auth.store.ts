@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import api from '../lib/api';
+import type { AppSection } from '../lib/sections';
 
 interface User {
   id: string;
   name: string;
   username: string;
   role: 'ADMIN' | 'VIEWER';
+  allowed_sections: AppSection[];
 }
 
 const telegramAuthInflight = new Map<

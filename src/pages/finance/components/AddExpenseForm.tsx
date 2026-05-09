@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { displayToIso, isoToDisplay } from '@/lib/date-format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -127,9 +128,10 @@ export function AddExpenseForm({ clients, categories, onSuccess }: AddExpenseFor
           <div className="space-y-1.5">
             <Label>Дата</Label>
             <Input
-              type="date"
-              value={expenseDate}
-              onChange={(e) => setExpenseDate(e.target.value)}
+              inputMode="numeric"
+              placeholder="dd-mm-yyyy"
+              value={isoToDisplay(expenseDate)}
+              onChange={(e) => setExpenseDate(displayToIso(e.target.value))}
             />
           </div>
 

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -13,8 +14,19 @@ import AnalyticsPage from '@/pages/analytics';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/AppLayout';
 import ThemeRoot from '@/components/ThemeRoot';
+import { type AppSection } from '@/lib/sections';
 
 const queryClient = new QueryClient();
+
+function SectionRoute({
+  section,
+  children,
+}: {
+  section: AppSection;
+  children: ReactNode;
+}) {
+  return <ProtectedRoute section={section}>{children}</ProtectedRoute>;
+}
 
 function App() {
   return (
@@ -30,16 +42,16 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<DashboardPage />} />
-            <Route path="clients/:id" element={<ClientDetailPage />} />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="finance" element={<FinancePage />} />
+            <Route index element={<SectionRoute section="dashboard"><DashboardPage /></SectionRoute>} />
+            <Route path="clients/:id" element={<SectionRoute section="clients"><ClientDetailPage /></SectionRoute>} />
+            <Route path="clients" element={<SectionRoute section="clients"><ClientsPage /></SectionRoute>} />
+            <Route path="finance" element={<SectionRoute section="finance"><FinancePage /></SectionRoute>} />
             <Route path="expenses" element={<Navigate to="/finance" replace />} />
-            <Route path="expense-categories" element={<ExpenseCategoriesPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="balances" element={<BalancesPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="expense-categories" element={<SectionRoute section="expenseCategories"><ExpenseCategoriesPage /></SectionRoute>} />
+            <Route path="analytics" element={<SectionRoute section="analytics"><AnalyticsPage /></SectionRoute>} />
+            <Route path="balances" element={<SectionRoute section="clients"><BalancesPage /></SectionRoute>} />
+            <Route path="users" element={<SectionRoute section="users"><UsersPage /></SectionRoute>} />
+            <Route path="settings" element={<SectionRoute section="settings"><SettingsPage /></SectionRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

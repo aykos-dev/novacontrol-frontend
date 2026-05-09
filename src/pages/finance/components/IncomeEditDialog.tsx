@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { displayToIso, isoToDisplay } from '@/lib/date-format';
 import {
   Select,
   SelectContent,
@@ -107,7 +108,12 @@ export function IncomeEditDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Дата</Label>
-            <Input type="date" value={incomeDate} onChange={(e) => setIncomeDate(e.target.value)} />
+            <Input
+              inputMode="numeric"
+              placeholder="dd-mm-yyyy"
+              value={isoToDisplay(incomeDate)}
+              onChange={(e) => setIncomeDate(displayToIso(e.target.value))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Сумма (USD)</Label>

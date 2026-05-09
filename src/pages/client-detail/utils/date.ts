@@ -9,7 +9,7 @@ export function defaultDateRange() {
 export function formatTimestamp(value: string | null): string {
   if (!value) return 'Никогда';
   try {
-    return format(new Date(value), 'dd.MM.yyyy HH:mm');
+    return format(new Date(value), 'dd-MM-yyyy HH:mm');
   } catch {
     return 'Никогда';
   }

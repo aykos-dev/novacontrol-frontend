@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import DateRangePicker from '@/components/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { isoToDisplay } from '@/lib/date-format';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -204,7 +205,7 @@ export function ExpensesHistoryTable({ clients, categories, isAdmin }: ExpensesH
             ) : (
               expenses.map((expense) => (
                 <TableRow key={expense.id}>
-                  <TableCell>{expense.expense_date}</TableCell>
+                  <TableCell>{isoToDisplay(expense.expense_date)}</TableCell>
                   <TableCell>{expense.client?.name}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">

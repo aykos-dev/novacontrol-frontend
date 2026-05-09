@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Plus, Pencil, Trash2, LayoutDashboard } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/auth.store";
+import { canAccessSection } from "@/lib/sections";
 import {
   Table,
   TableHeader,
@@ -58,7 +59,7 @@ export default function ClientsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = canAccessSection(user, "clients");
 
   function goToClientDetail(clientId: string) {
     navigate(`/clients/${clientId}`);
@@ -193,7 +194,7 @@ export default function ClientsPage() {
   function formatLastSync(value: string | null): string {
     if (!value) return "Never";
     try {
-      return format(new Date(value), "dd.MM.yyyy HH:mm");
+      return format(new Date(value), "dd-MM-yyyy HH:mm");
     } catch {
       return "Never";
     }

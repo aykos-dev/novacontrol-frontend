@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import DateRangePicker from '@/components/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { isoToDisplay } from '@/lib/date-format';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -175,7 +176,7 @@ export function IncomesHistoryTable({ clients, isAdmin }: IncomesHistoryTablePro
             ) : (
               incomes.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{row.income_date}</TableCell>
+                  <TableCell>{isoToDisplay(row.income_date)}</TableCell>
                   <TableCell>{row.client?.name}</TableCell>
                   <TableCell className="text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                     {Number(row.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}

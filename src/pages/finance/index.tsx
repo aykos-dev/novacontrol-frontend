@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { canAccessSection } from '@/lib/sections';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import type { Client, ExpenseCategoryRow } from './types';
@@ -15,7 +16,7 @@ export default function FinancePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === 'ADMIN';
+  const canManageFinance = canAccessSection(user, 'finance');
 
   const [activeTab, setActiveTab] = useState<string | number>('expense');
 
@@ -75,7 +76,7 @@ export default function FinancePage() {
           <HistorySection
             clients={clients}
             categories={expenseCategories}
-            isAdmin={isAdmin}
+            isAdmin={canManageFinance}
           />
         </TabsContent>
       </Tabs>

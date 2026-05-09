@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2, Clock, Settings2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { canAccessSection } from '@/lib/sections';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
-  if (user?.role !== 'ADMIN') {
+  if (!canAccessSection(user, 'settings')) {
     return (
       <div className="mx-auto max-w-lg p-6 text-center text-muted-foreground">
         {t('settings.adminOnly')}

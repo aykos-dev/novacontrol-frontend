@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Plus, Pencil, Trash2, ShieldAlert } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { ALL_SECTIONS, canAccessSection, type AppSection } from '@/lib/sections';
 import {
   Table,
   TableHeader,
@@ -43,6 +44,7 @@ interface User {
   name: string;
   username: string;
   role: 'ADMIN' | 'VIEWER';
+  allowed_sections: AppSection[] | null;
   telegram_id: string | null;
   is_active: boolean;
   created_at: string;
@@ -53,6 +55,7 @@ interface UserFormData {
   username: string;
   password: string;
   role: 'ADMIN' | 'VIEWER';
+  allowed_sections: AppSection[];
   telegram_id: string;
 }
 
@@ -61,6 +64,7 @@ const emptyForm: UserFormData = {
   username: '',
   password: '',
   role: 'VIEWER',
+  allowed_sections: [],
   telegram_id: '',
 };
 
@@ -72,7 +76,7 @@ export default function UsersPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const hasUsersAccess = canAccessSection(currentUser, 'users');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -84,7 +88,7 @@ export default function UsersPage() {
 
   // ---- Access guard ----
 
-  if (!isAdmin) {
+  if (!hasUsersAccess) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <ShieldAlert className="mb-4 size-12 text-muted-foreground/50" />
@@ -166,6 +170,7 @@ export default function UsersPage() {
       username: user.username,
       password: '',
       role: user.role,
+      allowed_sections: user.allowed_sections ?? [],
       telegram_id: user.telegram_id ?? '',
     });
     setFormError(null);
@@ -205,6 +210,10 @@ export default function UsersPage() {
       name: form.name.trim(),
       username: form.username.trim(),
       role: form.role,
+      allowed_sections:
+        form.role === 'ADMIN'
+          ? ALL_SECTIONS.map((section) => section.id)
+          : form.allowed_sections,
     };
 
     if (form.password) {
@@ -245,6 +254,7 @@ export default function UsersPage() {
               <TableHead>Name</TableHead>
               <TableHead>Username</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Sections</TableHead>
               <TableHead>Telegram</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
@@ -265,6 +275,9 @@ export default function UsersPage() {
                     <Skeleton className="h-5 w-16" />
                   </TableCell>
                   <TableCell>
+                    <Skeleton className="h-5 w-28" />
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
@@ -281,7 +294,7 @@ export default function UsersPage() {
             ) : users.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="h-32 text-center text-muted-foreground"
                 >
                   No users found. Click "Add User" to create one.
@@ -301,6 +314,20 @@ export default function UsersPage() {
                       {user.role}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex max-w-xs flex-wrap gap-1">
+                      {user.role === 'ADMIN'
+                        ? 'All sections'
+                        : (user.allowed_sections ?? []).map((sectionId) => {
+                            const section = ALL_SECTIONS.find((s) => s.id === sectionId);
+                            return section ? (
+                              <Badge key={section.id} variant="outline">
+                                {t(section.labelKey)}
+                              </Badge>
+                            ) : null;
+                      })}
+                    </div>
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {user.telegram_id ?? '\u2014'}
                   </TableCell>
@@ -314,7 +341,7 @@ export default function UsersPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {format(new Date(user.created_at), 'dd.MM.yyyy HH:mm')}
+                    {format(new Date(user.created_at), 'dd-MM-yyyy HH:mm')}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -422,6 +449,43 @@ export default function UsersPage() {
                   <SelectItem value="VIEWER">VIEWER</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Section access</Label>
+              <div className="grid grid-cols-1 gap-2 rounded-lg border p-3 sm:grid-cols-2">
+                {ALL_SECTIONS.map((section) => {
+                  const checked =
+                    form.role === 'ADMIN' ||
+                    form.allowed_sections.includes(section.id);
+                  return (
+                    <label
+                      key={section.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={form.role === 'ADMIN'}
+                        onChange={(e) => {
+                          setForm((f) => ({
+                            ...f,
+                            allowed_sections: e.target.checked
+                              ? [...new Set([...f.allowed_sections, section.id])]
+                              : f.allowed_sections.filter((id) => id !== section.id),
+                          }));
+                        }}
+                      />
+                      {t(section.labelKey)}
+                    </label>
+                  );
+                })}
+              </div>
+              {form.role === 'ADMIN' && (
+                <p className="text-xs text-muted-foreground">
+                  Admin users always have access to all sections.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
