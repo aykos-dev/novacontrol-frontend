@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { format, subWeeks } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, subWeeks } from 'date-fns';
 import {
+  BarChart3,
   TrendingUp,
   TrendingDown,
   Receipt,
@@ -73,15 +74,18 @@ interface ExpensesSummary {
   }[];
   grandTotal: number;
   grandTotalKgs?: number;
+  grandTotalOriginal?: number;
 }
 
 interface IncomesSummary {
   grandTotal: number;
   grandTotalKgs?: number;
+  grandTotalOriginal?: number;
 }
 
 /** WB + extra mixes use KGS equivalents */
 const MIXED_KGS = 'KGS';
+const EXTRA_USD = 'USD';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,17 +98,17 @@ function formatCurrency(amount: number, currency: string): string {
     maximumFractionDigits: 2,
   });
 
-  const symbol = currency?.toUpperCase() === 'USD' ? '$' : 'KGS';
+  const symbol = currency?.toUpperCase() === 'USD' ? 'USD' : 'KGS';
 
   if (currency?.toUpperCase() === 'USD') {
-    return `${amount < 0 ? '-' : ''}${symbol}${formatted}`;
+    return `${amount < 0 ? '-' : ''}${formatted} ${symbol}`;
   }
   return `${amount < 0 ? '-' : ''}${formatted} ${symbol}`;
 }
 
 function defaultDateRange() {
   const to = new Date();
-  const from = subWeeks(to, 4);
+  const from = addDays(subWeeks(to, 4), 1);
   return {
     from: format(from, 'yyyy-MM-dd'),
     to: format(to, 'yyyy-MM-dd'),
@@ -122,6 +126,13 @@ const BREAKDOWN_KEYS: (keyof WbReport['breakdown'])[] = [
   'acceptance',
   'rebill_logistic_cost',
 ];
+
+function countRangeDays(from: string, to: string): number {
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+  const diff = differenceInCalendarDays(end, start);
+  return Number.isFinite(diff) ? Math.max(diff + 1, 1) : 1;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -231,6 +242,11 @@ export default function DashboardPage() {
       return {
         byCategory: [],
         grandTotal: summaries.reduce((sum, s) => sum + s.grandTotal, 0),
+        grandTotalKgs: summaries.reduce((sum, s) => sum + (s.grandTotalKgs ?? s.grandTotal), 0),
+        grandTotalOriginal: summaries.reduce(
+          (sum, s) => sum + (s.grandTotalOriginal ?? s.grandTotal),
+          0,
+        ),
       } satisfies ExpensesSummary;
     },
     enabled: clientIdsToFetch.length > 0,
@@ -254,6 +270,11 @@ export default function DashboardPage() {
 
       return {
         grandTotal: summaries.reduce((sum, s) => sum + s.grandTotal, 0),
+        grandTotalKgs: summaries.reduce((sum, s) => sum + (s.grandTotalKgs ?? s.grandTotal), 0),
+        grandTotalOriginal: summaries.reduce(
+          (sum, s) => sum + (s.grandTotalOriginal ?? s.grandTotal),
+          0,
+        ),
       };
     },
     enabled: clientIdsToFetch.length > 0,
@@ -265,9 +286,13 @@ export default function DashboardPage() {
   const wbExpenses = wbReportQuery.data?.totals.expenses ?? 0;
   const extraExpenses = expensesQuery.data?.grandTotal ?? 0;
   const extraIncomes = incomesQuery.data?.grandTotal ?? 0;
+  const extraExpensesUsd = expensesQuery.data?.grandTotalOriginal ?? extraExpenses;
+  const extraIncomesUsd = incomesQuery.data?.grandTotalOriginal ?? extraIncomes;
   const revenue = wbIncome - wbExpenses;
   const realRevenue = revenue - extraExpenses;
-  const extraBalance = extraIncomes - extraExpenses;
+  const extraBalanceUsd = extraIncomesUsd - extraExpensesUsd;
+  const rangeDays = countRangeDays(dateRange.from, dateRange.to);
+  const averageExtraExpenseUsd = extraExpensesUsd / rangeDays;
 
   const isLoading =
     clientsQuery.isLoading ||
@@ -289,6 +314,7 @@ export default function DashboardPage() {
       {
         label: t('dashboard.cards.wbIncome'),
         value: wbIncome,
+        currency: MIXED_KGS,
         icon: TrendingUp,
         borderColor: 'border-l-primary',
         iconColor: 'text-primary',
@@ -297,6 +323,7 @@ export default function DashboardPage() {
       {
         label: t('dashboard.cards.wbExpenses'),
         value: wbExpenses,
+        currency: MIXED_KGS,
         icon: TrendingDown,
         borderColor: 'border-l-[var(--wb-violet)]',
         iconColor: 'text-[var(--wb-violet)]',
@@ -305,14 +332,25 @@ export default function DashboardPage() {
       {
         label: t('dashboard.cards.revenueRetailMinusFees'),
         value: revenue,
+        currency: MIXED_KGS,
         icon: DollarSign,
         borderColor: 'border-l-chart-5',
         iconColor: 'text-chart-5',
         bgAccent: 'bg-chart-5/15 dark:bg-chart-5/25',
       },
       {
+        label: t('dashboard.cards.realRevenue'),
+        value: realRevenue,
+        currency: MIXED_KGS,
+        icon: Calculator,
+        borderColor: 'border-l-chart-3',
+        iconColor: 'text-chart-3',
+        bgAccent: 'bg-chart-3/15 dark:bg-chart-3/25',
+      },
+      {
         label: t('dashboard.cards.extraExpensesKgs'),
-        value: extraExpenses,
+        value: extraExpensesUsd,
+        currency: EXTRA_USD,
         icon: Receipt,
         borderColor: 'border-l-chart-4',
         iconColor: 'text-chart-4',
@@ -320,30 +358,33 @@ export default function DashboardPage() {
       },
       {
         label: t('dashboard.cards.extraIncomesKgs'),
-        value: extraIncomes,
+        value: extraIncomesUsd,
+        currency: EXTRA_USD,
         icon: WalletCards,
         borderColor: 'border-l-emerald-500',
         iconColor: 'text-emerald-600 dark:text-emerald-400',
         bgAccent: 'bg-emerald-500/15 dark:bg-emerald-500/25',
       },
       {
-        label: t('dashboard.cards.realRevenue'),
-        value: realRevenue,
-        icon: Calculator,
-        borderColor: 'border-l-chart-3',
-        iconColor: 'text-chart-3',
-        bgAccent: 'bg-chart-3/15 dark:bg-chart-3/25',
-      },
-      {
         label: t('dashboard.cards.extraBalanceKgs'),
-        value: extraBalance,
+        value: extraBalanceUsd,
+        currency: EXTRA_USD,
         icon: DollarSign,
-        borderColor: extraBalance <= 0 ? 'border-l-destructive' : 'border-l-cyan-500',
-        iconColor: extraBalance <= 0 ? 'text-destructive' : 'text-cyan-600 dark:text-cyan-400',
+        borderColor: extraBalanceUsd <= 0 ? 'border-l-destructive' : 'border-l-cyan-500',
+        iconColor: extraBalanceUsd <= 0 ? 'text-destructive' : 'text-cyan-600 dark:text-cyan-400',
         bgAccent:
-          extraBalance <= 0
+          extraBalanceUsd <= 0
             ? 'bg-destructive/15 dark:bg-destructive/25'
             : 'bg-cyan-500/15 dark:bg-cyan-500/25',
+      },
+      {
+        label: t('dashboard.cards.averageExpenseKgs'),
+        value: averageExtraExpenseUsd,
+        currency: EXTRA_USD,
+        icon: BarChart3,
+        borderColor: 'border-l-sky-500',
+        iconColor: 'text-sky-600 dark:text-sky-400',
+        bgAccent: 'bg-sky-500/15 dark:bg-sky-500/25',
       },
     ],
     [
@@ -352,9 +393,12 @@ export default function DashboardPage() {
       wbExpenses,
       revenue,
       extraExpenses,
+      extraExpensesUsd,
       extraIncomes,
+      extraIncomesUsd,
       realRevenue,
-      extraBalance,
+      extraBalanceUsd,
+      averageExtraExpenseUsd,
     ],
   );
 
@@ -396,7 +440,7 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading
-          ? Array.from({ length: 7 }).map((_, i) => (
+          ? Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="border-l-4 border-l-muted">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <Skeleton className="h-4 w-24" />
@@ -426,7 +470,7 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-2xl font-bold tracking-tight">
-                      {formatCurrency(card.value, MIXED_KGS)}
+                      {formatCurrency(card.value, card.currency)}
                     </p>
                   </CardContent>
                 </Card>

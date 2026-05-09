@@ -14,6 +14,7 @@ import {
 import { useThemeStore } from '@/stores/theme.store';
 
 import { SectionAChart } from './components/SectionAChart';
+import { SectionABreakdown } from './components/SectionABreakdown';
 import { SectionBPieChart } from './components/SectionBPieChart';
 import type {
   Client,
@@ -129,12 +130,14 @@ export default function AnalyticsPage() {
         </Select>
       </div>
 
-      <SectionAChart
-        data={composedChartData}
-        breakdown={wbReportQuery.data?.breakdown ?? null}
-        isLoading={isWbLoading}
-      />
-      <SectionBPieChart data={pieData} total={pieTotal} isLoading={isExpensesLoading} />
+      <SectionAChart data={composedChartData} isLoading={isWbLoading} />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <SectionBPieChart data={pieData} total={pieTotal} isLoading={isExpensesLoading} />
+        <SectionABreakdown
+          breakdown={wbReportQuery.data?.breakdown ?? null}
+          isLoading={isWbLoading}
+        />
+      </div>
     </div>
   );
 }

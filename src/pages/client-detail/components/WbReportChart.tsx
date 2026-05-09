@@ -111,7 +111,7 @@ function BreakdownSidebar({
 }) {
   return (
     <div className="shrink-0 space-y-3 lg:w-60">
-      <h3 className="text-sm font-semibold text-muted-foreground">Разбивка</h3>
+      <h3 className="text-sm font-semibold text-muted-foreground">Распределение</h3>
       <div className="flex items-center justify-between rounded-lg border p-3">
         <div className="flex items-center gap-2">
           <span className={cn('h-2.5 w-2.5 rounded-full', palette.retailDot)} />

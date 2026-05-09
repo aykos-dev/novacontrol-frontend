@@ -60,6 +60,14 @@ export function SummaryCards({
       iconColor: 'text-chart-5',
     },
     {
+      label: 'Чистая выручка',
+      value: realRevenue,
+      icon: Calculator,
+      border: 'border-l-chart-3',
+      iconBg: 'bg-chart-3/15 dark:bg-chart-3/25',
+      iconColor: 'text-chart-3',
+    },
+    {
       label: 'Доп. расходы (KGS)',
       value: extraExpenses,
       icon: Receipt,
@@ -74,14 +82,6 @@ export function SummaryCards({
       border: 'border-l-emerald-500',
       iconBg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      label: 'Чистая выручка',
-      value: realRevenue,
-      icon: Calculator,
-      border: 'border-l-chart-3',
-      iconBg: 'bg-chart-3/15 dark:bg-chart-3/25',
-      iconColor: 'text-chart-3',
     },
     {
       label: 'Баланс доп. средств',

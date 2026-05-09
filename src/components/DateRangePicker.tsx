@@ -1,4 +1,4 @@
-import { subWeeks, format } from 'date-fns';
+import { addDays, subWeeks, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { displayToIso, isoToDisplay } from '@/lib/date-format';
@@ -23,14 +23,14 @@ const presets = [
 function matchesWeekPreset(value: DateRange, weeks: number): boolean {
   const today = new Date();
   const toStr = format(today, 'yyyy-MM-dd');
-  const fromStr = format(subWeeks(today, weeks), 'yyyy-MM-dd');
+  const fromStr = format(addDays(subWeeks(today, weeks), 1), 'yyyy-MM-dd');
   return value.from === fromStr && value.to === toStr;
 }
 
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const handlePreset = (weeks: number) => {
     const today = new Date();
-    const from = subWeeks(today, weeks);
+    const from = addDays(subWeeks(today, weeks), 1);
     onChange({
       from: format(from, 'yyyy-MM-dd'),
       to: format(today, 'yyyy-MM-dd'),

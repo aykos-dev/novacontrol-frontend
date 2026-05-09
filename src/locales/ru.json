@@ -28,10 +28,11 @@
       "wbExpenses": "Расходы WB",
       "revenueRetailMinusFees": "Выручка (розница − сборы)",
       "wbBalanceChange": "Изменение баланса WB",
-      "extraExpensesKgs": "Доп. расходы (KGS)",
-      "extraIncomesKgs": "Доп. пополнения (KGS)",
+      "extraExpensesKgs": "Доп. расходы (USD)",
+      "extraIncomesKgs": "Доп. пополнения (USD)",
       "realRevenue": "Чистая выручка",
-      "extraBalanceKgs": "Баланс доп. средств"
+      "extraBalanceKgs": "Баланс доп. средств",
+      "averageExpenseKgs": "Средний расход / день"
     },
     "wbBreakdownTitle": "Разбивка расходов WB",
     "extraByCategoryTitle": "Доп. расходы по категориям",
